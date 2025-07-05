@@ -15,7 +15,6 @@ class SolvingView(tk.Frame):
         self.canvas.pack(fill="both", expand=True)
         self.canvas.create_image(0, 0, anchor="nw", image=self.bg_photo)
 
-        # Header
         self.canvas.create_text(362, 24, text="Resolviendo sudoku", font=("Helvetica", 18, "bold"), fill="black")
         self.btn_atras = tk.Button(self, text="← Atrás", command=lambda: controller.show_view("InputView"))
         self.canvas.create_window(60, 24, window=self.btn_atras)
@@ -40,7 +39,6 @@ class SolvingView(tk.Frame):
 
         # Controles
         self.canvas.create_text(560, 290, text="CONTROLES", font=("Helvetica", 12, "bold"), fill="white")
-        
         btn_play_pausa = tk.Button(self, font=("Helvetica", 10, "bold"), text="Play/Pausa", command=self.play_animation)
         btn_pasos = tk.Button(self, font=("Helvetica", 10, "bold"), text="Paso a Paso", command=self.step_once)
         btn_reiniciar = tk.Button(self, font=("Helvetica", 10, "bold"), text="Reiniciar", command=self.reset_view)
@@ -50,7 +48,6 @@ class SolvingView(tk.Frame):
 
         # Métricas
         self.canvas.create_text(170, 450, text="MÉTRICAS EN TIEMPO REAL", font=("Helvetica", 12, "bold"), fill="white")
-
         self.metrics_text = self.canvas.create_text(
             120, 520,
             text="Algoritmo Actual: [Nombre]\nTiempo Transcurrido: [0.00 ms]\nNúmero de Pasos: [0]\nBacktracks: [0]\nEstado: Buscando...",
@@ -62,9 +59,7 @@ class SolvingView(tk.Frame):
         # Botón para ir a resultados
         self.result_button = tk.Button(self, text="Ir a resultados", width=32, font=("Helvetica", 14, "bold"), command=self.ir_a_resultados)
         self.canvas.create_window(362, 700, window=self.result_button)
-        self.result_button.config(state='disabled')  # Inicialmente deshabilitado
-
-
+        self.result_button.config(state='disabled')
 
     def set_tablero(self, board):
         self.board = board
@@ -74,38 +69,23 @@ class SolvingView(tk.Frame):
                 if board[i][j] != 0:
                     self.entries[i][j].insert(0, str(board[i][j]))
 
-    def fake_solve(self):
-        # Simulación 
-        self.canvas.itemconfigure(self.metrics_text, text=(
-            "Métricas en Tiempo Real\n"
-            "Algoritmo Actual: Backtracking\n"
-            "Tiempo: [1.23 ms]\n"
-            "Pasos: [45]\n"
-            "Backtracks: [3]\n"
-            "Estado: ¡Sudoku Resuelto!"
-        ))
-
-        # Estado interno
-        self.steps = []
-        self.current_step_index = 0
-        self.board = [[0] * 9 for _ in range(9)]
-        self.solver = None
-        self.timer_running = False 
-
     def read_board(self):
+        self.board = []
         for i in range(9):
+            row = []
             for j in range(9):
                 val = self.entries[i][j].get()
-                self.board[i][j] = int(val) if val.isdigit() else 0
+                row.append(int(val) if val.isdigit() else 0)
+            self.board.append(row)
 
     def start_solving(self):
         self.read_board()
         algo = self.algo_var.get()
         self.estado_actual = "Buscando..."
-
-        # Guardar el tablero original antes de resolver
         self.original_board = [[self.entries[i][j].get() for j in range(9)] for i in range(9)]
+        self.selected_algo = algo  # ← Guardar cuál fue elegido
 
+        # Resolver con el algoritmo seleccionado
         if algo == "Backtracking":
             self.solver = BacktrackingSolver(self.board)
         else:
@@ -119,8 +99,32 @@ class SolvingView(tk.Frame):
         self.steps = self.solver.steps
         self.current_step_index = 0
         self.result_button.config(state='disabled')
-
         self.update_metrics(self.estado_actual)
+
+        # También resolver con ambos para comparación
+        board_copy = [row[:] for row in self.board]
+
+        bt_solver = BacktrackingSolver([row[:] for row in board_copy])
+        bt_start = time.time()
+        bt_solver.solve()
+        bt_end = time.time()
+
+        fb_solver = BruteForceSolver([row[:] for row in board_copy])
+        fb_start = time.time()
+        fb_solver.solve()
+        fb_end = time.time()
+
+        self.bt_metrics = {
+            "tiempo": (bt_end - bt_start) * 1000,
+            "pasos": len(bt_solver.steps),
+            "backtracks": bt_solver.backtracks
+        }
+
+        self.fb_metrics = {
+            "tiempo": (fb_end - fb_start) * 1000,
+            "pasos": len(fb_solver.steps),
+            "backtracks": fb_solver.backtracks
+        }
 
     def step_once(self):
         if self.current_step_index < len(self.steps):
@@ -137,7 +141,6 @@ class SolvingView(tk.Frame):
             self.update_metrics(self.estado_actual)
             self.current_step_index += 1
         else:
-            # Verifica si el tablero está completamente lleno
             if all(all(cell.get().isdigit() and cell.get() != "0" for cell in row) for row in self.entries):
                 self.estado_actual = "¡Solución Encontrada!"
             else:
@@ -148,9 +151,14 @@ class SolvingView(tk.Frame):
     def play_animation(self):
         if self.current_step_index < len(self.steps):
             self.step_once()
-            self.after(100, self.play_animation)  # 100ms delay
+            self.after(100, self.play_animation)
         else:
-            self.update_metrics("¡Sudoku resuelto!")
+            if all(all(cell.get().isdigit() and cell.get() != "0" for cell in row) for row in self.entries):
+                self.estado_actual = "¡Solución Encontrada!"
+                self.result_button.config(state='normal')
+            else:
+                self.estado_actual = "No hay solución"
+            self.update_metrics(self.estado_actual)
 
     def update_metrics(self, state):
         text = (
@@ -165,24 +173,32 @@ class SolvingView(tk.Frame):
     def reset_view(self):
         for i in range(9):
             for j in range(9):
-                valor_original = self.original_board[i][j] if hasattr(self, 'original_board') else ""
+                original = self.original_board[i][j] if hasattr(self, 'original_board') else ""
                 self.entries[i][j].delete(0, tk.END)
-                if valor_original.isdigit() and valor_original != "0":
-                    self.entries[i][j].insert(0, valor_original)
+                if original.isdigit() and original != "0":
+                    self.entries[i][j].insert(0, original)
                 self.entries[i][j].config(bg="white")
+
         self.steps = []
         self.current_step_index = 0
         self.result_button.config(state='disabled')
-        self.update_metrics("Reiniciado.")      
-    
+        self.update_metrics("Reiniciado.")
+
     def ir_a_resultados(self):
+        if self.result_button['state'] != 'normal':
+            print("Aún no se ha encontrado una solución completa.")
+            return
+    
         resultado_final = [[self.entries[i][j].get() or "0" for j in range(9)] for i in range(9)]
+    
+        # Paquete de métricas completas para cada algoritmo
+        bt_metrics = self.bt_metrics
+        fb_metrics = self.fb_metrics
+    
         self.controller.views["ResultsView"].set_resultado(
             resultado_final,
             self.algo_var.get(),
-            len(self.steps),
-            getattr(self.solver, 'backtracks', 0),
-            self.solving_time
+            bt_metrics,
+            fb_metrics
         )
         self.controller.show_view("ResultsView")
-
