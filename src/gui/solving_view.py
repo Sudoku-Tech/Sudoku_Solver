@@ -59,8 +59,19 @@ class SolvingView(tk.Frame):
         )
 
         # Botón para ir a resultados
-        btn_result = tk.Button(self, text="Ir a resultados", width=32, font=("Helvetica", 14, "bold"), command=lambda: controller.show_view("ResultsView"))
-        self.canvas.create_window(362, 700, window=btn_result)
+        self.result_button = tk.Button(self, text="Ir a resultados", width=32, font=("Helvetica", 14, "bold"), command=self.ir_a_resultados)
+        self.canvas.create_window(362, 700, window=self.result_button)
+        self.result_button.config(state='disabled')  # Inicialmente deshabilitado
+
+
+
+    def set_tablero(self, board):
+        self.board = board
+        for i in range(9):
+            for j in range(9):
+                self.entries[i][j].delete(0, tk.END)
+                if board[i][j] != 0:
+                    self.entries[i][j].insert(0, str(board[i][j]))
 
     def fake_solve(self):
         # Simulación 
@@ -138,3 +149,14 @@ class SolvingView(tk.Frame):
         self.current_step_index = 0
         self.result_button.config(state='disabled')
         self.update_metrics("Reiniciado.")      
+    
+    def ir_a_resultados(self):
+        resultado_final = [[self.entries[i][j].get() or "0" for j in range(9)] for i in range(9)]
+        self.controller.views["ResultsView"].set_resultado(
+            resultado_final,
+            self.algo_var.get(),
+            len(self.steps),
+            getattr(self.solver, 'backtracks', 0)
+        )
+        self.controller.show_view("ResultsView")
+

@@ -85,7 +85,7 @@ class InputView(tk.Frame):
         self.btn_gen = tk.Button(self, width=22, font=("Helvetica", 14, "bold"), text="GENERAR ALEATORIO", command=self.generar_tablero_en_vista)
         self.btn_cargar = tk.Button(self, width=22, font=("Helvetica", 14, "bold"), text="CARGAR TABLERO", command=self.cargar_tablero_desde_txt)
         self.btn_borrar = tk.Button(self, width=22, font=("Helvetica", 14, "bold"), text="BORRAR TABLERO", command=self.borrar_tablero)
-        self.btn_resolver = tk.Button(self, width=22, font=("Helvetica", 14, "bold"), text="RESOLVER", command=lambda: controller.show_view("SolvingView"))
+        self.btn_resolver = tk.Button(self, width=22, font=("Helvetica", 14, "bold"), text="RESOLVER", command=self.enviar_a_solving)
 
         self.canvas.create_window(210, 550, window=self.btn_gen)
         self.canvas.create_window(510, 550, window=self.btn_cargar)
@@ -138,3 +138,13 @@ class InputView(tk.Frame):
 
         except Exception as e:
             messagebox.showerror("Error", f"No se pudo cargar el tablero:\n{str(e)}")
+    
+    def enviar_a_solving(self):
+        board = [[0 for _ in range(9)] for _ in range(9)]
+        for i in range(9):
+            for j in range(9):
+                val = self.entries[i][j].get()
+                board[i][j] = int(val) if val.isdigit() else 0
+    
+        self.controller.views["SolvingView"].set_tablero(board)
+        self.controller.show_view("SolvingView")

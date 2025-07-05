@@ -40,3 +40,12 @@ class ResultsView(tk.Frame):
         self.btn_inicio = tk.Button(self, width=22, font=("Helvetica", 14, "bold"), text="VOLVER AL INICIO", command=lambda: controller.show_view("MainView"))
         self.canvas.create_window(210, 700, window=self.btn_otro)
         self.canvas.create_window(510, 700, window=self.btn_inicio)
+
+    def set_resultado(self, tablero, algoritmo, pasos, backtracks):
+        resultado = f"Algoritmo: {algoritmo}\nPasos: {pasos}\nBacktracks: {backtracks}\n\nTablero resuelto:\n"
+        for fila in tablero:
+            resultado += " ".join(fila) + "\n"
+    
+        self.text_widget.delete("1.0", tk.END)
+        self.text_widget.insert(tk.END, resultado)
+
