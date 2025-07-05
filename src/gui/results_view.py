@@ -41,8 +41,8 @@ class ResultsView(tk.Frame):
         self.canvas.create_window(210, 700, window=self.btn_otro)
         self.canvas.create_window(510, 700, window=self.btn_inicio)
 
-    def set_resultado(self, tablero, algoritmo, pasos, backtracks):
-        resultado = f"Algoritmo: {algoritmo}\nPasos: {pasos}\nBacktracks: {backtracks}\n\nTablero resuelto:\n"
+    def set_resultado(self, tablero, algoritmo, pasos, backtracks, tiempo_ms):
+        resultado = f"Algoritmo: {algoritmo}\nPasos: {pasos}\nBacktracks: {backtracks}\nTiempo: {tiempo_ms:.2f} ms\n\nTablero resuelto:\n"
         for fila in tablero:
             resultado += " ".join(fila) + "\n"
     
